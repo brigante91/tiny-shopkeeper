@@ -63,13 +63,13 @@ export const ProductCard = ({
           <h3 className="font-medium text-lg line-clamp-1">{name}</h3>
           
           <div className="flex items-center justify-between mt-2">
-            <span className="font-bold text-xl">${price.toFixed(2)}</span>
+            <span className="font-bold text-xl">€{price.toFixed(2)}</span>
             <Badge variant={
               stockStatus === 'out-of-stock' ? 'destructive' : 
               stockStatus === 'low-stock' ? 'outline' : 'secondary'
             }>
-              {stockStatus === 'out-of-stock' ? 'Out of stock' : 
-               stockStatus === 'low-stock' ? `Low: ${stock}` : `In stock: ${stock}`}
+              {stockStatus === 'out-of-stock' ? 'Esaurito' : 
+               stockStatus === 'low-stock' ? `Basso: ${stock}` : `Disponibile: ${stock}`}
             </Badge>
           </div>
         </CardContent>
@@ -77,12 +77,12 @@ export const ProductCard = ({
         <CardFooter className="p-4 pt-0 flex gap-2">
           {onView && (
             <Button variant="secondary" className="flex-1" onClick={() => onView(id)}>
-              View
+              Visualizza
             </Button>
           )}
           {onEdit && (
             <Button variant="outline" className="flex-1" onClick={() => onEdit(id)}>
-              Edit
+              Modifica
             </Button>
           )}
         </CardFooter>
