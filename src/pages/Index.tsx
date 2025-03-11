@@ -8,6 +8,8 @@ import { InventoryOverview } from '@/components/inventory/InventoryOverview';
 import { FornitorList } from '@/components/fornitori/FornitorList';
 import { UserList } from '@/components/utenti/UserList';
 import { PurchaseOrders } from '@/components/acquisti/PurchaseOrders';
+import { ReportsPage } from '@/components/reports/ReportsPage';
+import { SettingsPage } from '@/components/settings/SettingsPage';
 
 const Index = () => {
   return (
@@ -19,26 +21,11 @@ const Index = () => {
         <Route path="/fornitori" element={<FornitorList />} />
         <Route path="/utenti" element={<UserList />} />
         <Route path="/acquisti" element={<PurchaseOrders />} />
-        <Route path="/reports" element={<ReportsPlaceholder />} />
-        <Route path="/impostazioni" element={<SettingsPlaceholder />} />
+        <Route path="/reports" element={<ReportsPage />} />
+        <Route path="/impostazioni" element={<SettingsPage />} />
       </Routes>
     </Layout>
   );
 };
-
-// Placeholder components for routes we haven't fully implemented yet
-const ReportsPlaceholder = () => (
-  <div className="space-y-4">
-    <h1 className="text-4xl font-bold tracking-tight">Statistiche</h1>
-    <p className="text-muted-foreground">In arrivo. Questa funzionalità è in fase di sviluppo.</p>
-  </div>
-);
-
-const SettingsPlaceholder = () => (
-  <div className="space-y-4">
-    <h1 className="text-4xl font-bold tracking-tight">Impostazioni</h1>
-    <p className="text-muted-foreground">In arrivo. Questa funzionalità è in fase di sviluppo.</p>
-  </div>
-);
 
 export default Index;
