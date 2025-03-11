@@ -9,7 +9,10 @@ import {
   BarChart, 
   Settings,
   Menu,
-  X
+  X,
+  Users,
+  Truck,
+  FileText
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SheetContent, SheetTrigger, Sheet } from '@/components/ui/sheet';
@@ -48,10 +51,13 @@ export const Navbar = () => {
 
   const navItems = [
     { to: '/', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
-    { to: '/products', icon: <Package size={20} />, label: 'Products' },
-    { to: '/inventory', icon: <ShoppingCart size={20} />, label: 'Inventory' },
-    { to: '/reports', icon: <BarChart size={20} />, label: 'Reports' },
-    { to: '/settings', icon: <Settings size={20} />, label: 'Settings' }
+    { to: '/prodotti', icon: <Package size={20} />, label: 'Prodotti' },
+    { to: '/inventario', icon: <ShoppingCart size={20} />, label: 'Inventario' },
+    { to: '/fornitori', icon: <Truck size={20} />, label: 'Fornitori' },
+    { to: '/acquisti', icon: <FileText size={20} />, label: 'Ordini di Acquisto' },
+    { to: '/utenti', icon: <Users size={20} />, label: 'Utenti' },
+    { to: '/reports', icon: <BarChart size={20} />, label: 'Statistiche' },
+    { to: '/impostazioni', icon: <Settings size={20} />, label: 'Impostazioni' }
   ];
 
   const getNavContent = (mobile = false) => (
