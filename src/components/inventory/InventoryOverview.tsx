@@ -10,9 +10,10 @@ import { ShoppingCart, Plus, Search, AlertTriangle, RefreshCw } from 'lucide-rea
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { InventoryItem, updateInventoryFromOrder } from '@/lib/utils';
 
 // Dati di esempio
-const initialInventoryItems = [
+const initialInventoryItems: InventoryItem[] = [
   { id: '1', name: 'Latte Biologico', sku: 'MLK-001', stock: 15, status: 'In Magazzino', supplier: 'Latteria Lombarda', lastUpdated: '2023-05-10' },
   { id: '2', name: 'Pane Fresco', sku: 'BRD-002', stock: 8, status: 'In Magazzino', supplier: 'Panificio Locale', lastUpdated: '2023-05-11' },
   { id: '3', name: 'Uova (12 pezzi)', sku: 'EGG-003', stock: 12, status: 'In Magazzino', supplier: 'Fattoria Le Uova', lastUpdated: '2023-05-09' },
@@ -23,13 +24,26 @@ const initialInventoryItems = [
   { id: '8', name: 'Mele (1kg)', sku: 'APL-008', stock: 20, status: 'In Magazzino', supplier: 'Frutta Fresca', lastUpdated: '2023-05-10' },
 ];
 
+// Example purchase order (this would normally come from the PurchaseOrders component)
+const examplePurchaseOrder = {
+  id: 'PO-001',
+  supplier: 'Articoli Casa',
+  date: '2023-05-15',
+  items: [
+    { productId: '6', productName: 'Carta Igienica (8 rotoli)', quantity: 10, unitPrice: 3.50 },
+    { productId: '7', productName: 'Detersivo Piatti', quantity: 5, unitPrice: 2.80 }
+  ],
+  status: 'Ricevuto' as const,
+  total: 49
+};
+
 export const InventoryOverview = () => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [inventoryItems, setInventoryItems] = useState(initialInventoryItems);
   const [isNewProductOpen, setIsNewProductOpen] = useState(false);
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
-  const [currentItem, setCurrentItem] = useState<any>(null);
+  const [currentItem, setCurrentItem] = useState<InventoryItem | null>(null);
   const [newProduct, setNewProduct] = useState({
     name: '',
     sku: '',
@@ -59,7 +73,7 @@ export const InventoryOverview = () => {
     const today = new Date().toISOString().split('T')[0];
     const newId = (inventoryItems.length + 1).toString();
     
-    const productToAdd = {
+    const productToAdd: InventoryItem = {
       id: newId,
       name: newProduct.name,
       sku: newProduct.sku,
@@ -79,7 +93,7 @@ export const InventoryOverview = () => {
     });
   };
   
-  const handleOpenUpdate = (item: any) => {
+  const handleOpenUpdate = (item: InventoryItem) => {
     setCurrentItem(item);
     setQuantityToAdd(0);
     setIsUpdateOpen(true);
@@ -111,23 +125,23 @@ export const InventoryOverview = () => {
     });
   };
   
-  // Questa funzione simula l'aggiornamento delle quantità quando un ordine è ricevuto
-  const updateQuantityFromOrder = (productId: string, quantity: number) => {
-    const today = new Date().toISOString().split('T')[0];
-    const updatedItems = inventoryItems.map(item => {
-      if (item.id === productId) {
-        const newStock = item.stock + quantity;
-        return {
-          ...item,
-          stock: newStock,
-          status: newStock < 5 ? 'Scorta Bassa' : 'In Magazzino',
-          lastUpdated: today
-        };
-      }
-      return item;
-    });
-    
-    setInventoryItems(updatedItems);
+  // Function to handle when a purchase order is received
+  const handleOrderReceived = (order: any) => {
+    if (order.status === 'Ricevuto') {
+      const updatedInventory = updateInventoryFromOrder(inventoryItems, order);
+      setInventoryItems(updatedInventory);
+      
+      toast({
+        title: "Inventario aggiornato",
+        description: "Le quantità sono state aggiornate in base all'ordine ricevuto.",
+        variant: "success"
+      });
+    }
+  };
+  
+  // For demo purposes, we'll add a button to simulate receiving an order
+  const simulateOrderReceived = () => {
+    handleOrderReceived(examplePurchaseOrder);
   };
   
   return (
@@ -159,10 +173,15 @@ export const InventoryOverview = () => {
               Stato Inventario
             </CardTitle>
             
-            <Button size="sm" onClick={() => setIsNewProductOpen(true)}>
-              <Plus size={16} className="mr-2" />
-              Nuovo Prodotto
-            </Button>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={simulateOrderReceived}>
+                Simula Ricezione Ordine
+              </Button>
+              <Button size="sm" onClick={() => setIsNewProductOpen(true)}>
+                <Plus size={16} className="mr-2" />
+                Nuovo Prodotto
+              </Button>
+            </div>
           </CardHeader>
           
           <CardContent>
