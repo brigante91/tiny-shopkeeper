@@ -1,15 +1,18 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { FadeIn, SlideUp } from '@/components/ui/motion';
-import { ShoppingCart, Plus, Search, AlertTriangle } from 'lucide-react';
+import { ShoppingCart, Plus, Search, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
 
 // Dati di esempio
-const inventoryItems = [
+const initialInventoryItems = [
   { id: '1', name: 'Latte Biologico', sku: 'MLK-001', stock: 15, status: 'In Magazzino', supplier: 'Latteria Lombarda', lastUpdated: '2023-05-10' },
   { id: '2', name: 'Pane Fresco', sku: 'BRD-002', stock: 8, status: 'In Magazzino', supplier: 'Panificio Locale', lastUpdated: '2023-05-11' },
   { id: '3', name: 'Uova (12 pezzi)', sku: 'EGG-003', stock: 12, status: 'In Magazzino', supplier: 'Fattoria Le Uova', lastUpdated: '2023-05-09' },
@@ -21,7 +24,19 @@ const inventoryItems = [
 ];
 
 export const InventoryOverview = () => {
-  const [searchQuery, setSearchQuery] = React.useState('');
+  const { toast } = useToast();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [inventoryItems, setInventoryItems] = useState(initialInventoryItems);
+  const [isNewProductOpen, setIsNewProductOpen] = useState(false);
+  const [isUpdateOpen, setIsUpdateOpen] = useState(false);
+  const [currentItem, setCurrentItem] = useState<any>(null);
+  const [newProduct, setNewProduct] = useState({
+    name: '',
+    sku: '',
+    stock: 0,
+    supplier: '',
+  });
+  const [quantityToAdd, setQuantityToAdd] = useState(0);
   
   const filteredItems = inventoryItems.filter(item => 
     item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -30,6 +45,90 @@ export const InventoryOverview = () => {
   );
   
   const lowStockCount = inventoryItems.filter(item => item.status === 'Scorta Bassa').length;
+  
+  const handleAddProduct = () => {
+    if (!newProduct.name || !newProduct.sku) {
+      toast({
+        title: "Errore",
+        description: "Nome prodotto e SKU sono campi obbligatori.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const today = new Date().toISOString().split('T')[0];
+    const newId = (inventoryItems.length + 1).toString();
+    
+    const productToAdd = {
+      id: newId,
+      name: newProduct.name,
+      sku: newProduct.sku,
+      stock: newProduct.stock,
+      status: newProduct.stock < 5 ? 'Scorta Bassa' : 'In Magazzino',
+      supplier: newProduct.supplier,
+      lastUpdated: today
+    };
+    
+    setInventoryItems([...inventoryItems, productToAdd]);
+    setNewProduct({ name: '', sku: '', stock: 0, supplier: '' });
+    setIsNewProductOpen(false);
+    
+    toast({
+      title: "Prodotto aggiunto",
+      description: "Il prodotto è stato aggiunto all'inventario."
+    });
+  };
+  
+  const handleOpenUpdate = (item: any) => {
+    setCurrentItem(item);
+    setQuantityToAdd(0);
+    setIsUpdateOpen(true);
+  };
+  
+  const handleUpdateQuantity = () => {
+    if (!currentItem) return;
+    
+    const today = new Date().toISOString().split('T')[0];
+    const updatedItems = inventoryItems.map(item => {
+      if (item.id === currentItem.id) {
+        const newStock = item.stock + quantityToAdd;
+        return {
+          ...item,
+          stock: newStock,
+          status: newStock < 5 ? 'Scorta Bassa' : 'In Magazzino',
+          lastUpdated: today
+        };
+      }
+      return item;
+    });
+    
+    setInventoryItems(updatedItems);
+    setIsUpdateOpen(false);
+    
+    toast({
+      title: "Quantità aggiornata",
+      description: `La quantità di ${currentItem.name} è stata aggiornata.`
+    });
+  };
+  
+  // Questa funzione simula l'aggiornamento delle quantità quando un ordine è ricevuto
+  const updateQuantityFromOrder = (productId: string, quantity: number) => {
+    const today = new Date().toISOString().split('T')[0];
+    const updatedItems = inventoryItems.map(item => {
+      if (item.id === productId) {
+        const newStock = item.stock + quantity;
+        return {
+          ...item,
+          stock: newStock,
+          status: newStock < 5 ? 'Scorta Bassa' : 'In Magazzino',
+          lastUpdated: today
+        };
+      }
+      return item;
+    });
+    
+    setInventoryItems(updatedItems);
+  };
   
   return (
     <div className="space-y-6">
@@ -60,7 +159,7 @@ export const InventoryOverview = () => {
               Stato Inventario
             </CardTitle>
             
-            <Button size="sm">
+            <Button size="sm" onClick={() => setIsNewProductOpen(true)}>
               <Plus size={16} className="mr-2" />
               Nuovo Prodotto
             </Button>
@@ -104,7 +203,10 @@ export const InventoryOverview = () => {
                       <TableCell>{item.supplier}</TableCell>
                       <TableCell>{item.lastUpdated}</TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm">Aggiorna</Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleOpenUpdate(item)}>
+                          <RefreshCw size={16} className="mr-2" />
+                          Aggiorna
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -122,6 +224,118 @@ export const InventoryOverview = () => {
           </CardContent>
         </Card>
       </SlideUp>
+      
+      {/* Sheet per aggiungere nuovo prodotto */}
+      <Sheet open={isNewProductOpen} onOpenChange={setIsNewProductOpen}>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>Aggiungi Nuovo Prodotto</SheetTitle>
+            <SheetDescription>
+              Inserisci i dettagli del nuovo prodotto da aggiungere all'inventario.
+            </SheetDescription>
+          </SheetHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="product-name">Nome Prodotto *</Label>
+              <Input 
+                id="product-name" 
+                value={newProduct.name}
+                onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
+                placeholder="Es. Pasta di Semola"
+              />
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="product-sku">SKU *</Label>
+              <Input 
+                id="product-sku" 
+                value={newProduct.sku}
+                onChange={(e) => setNewProduct({...newProduct, sku: e.target.value})}
+                placeholder="Es. PST-001"
+              />
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="product-quantity">Quantità Iniziale</Label>
+              <Input 
+                id="product-quantity" 
+                type="number"
+                value={newProduct.stock}
+                onChange={(e) => setNewProduct({...newProduct, stock: parseInt(e.target.value) || 0})}
+                min="0"
+              />
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="product-supplier">Fornitore</Label>
+              <Input 
+                id="product-supplier" 
+                value={newProduct.supplier}
+                onChange={(e) => setNewProduct({...newProduct, supplier: e.target.value})}
+                placeholder="Es. Barilla S.p.A."
+              />
+            </div>
+          </div>
+          
+          <SheetFooter>
+            <Button variant="outline" onClick={() => setIsNewProductOpen(false)}>Annulla</Button>
+            <Button onClick={handleAddProduct}>Aggiungi Prodotto</Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+      
+      {/* Sheet per aggiornare la quantità */}
+      <Sheet open={isUpdateOpen} onOpenChange={setIsUpdateOpen}>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>Aggiorna Quantità</SheetTitle>
+            <SheetDescription>
+              Aggiorna la quantità in inventario per {currentItem?.name || "questo prodotto"}.
+            </SheetDescription>
+          </SheetHeader>
+          
+          {currentItem && (
+            <div className="grid gap-4 py-4">
+              <div className="p-4 rounded-md bg-muted">
+                <p className="text-sm font-medium">Informazioni Prodotto</p>
+                <h3 className="text-lg font-semibold mt-1">{currentItem.name}</h3>
+                <p className="text-sm text-muted-foreground mt-1">SKU: {currentItem.sku}</p>
+                <div className="flex items-center mt-2">
+                  <p className="text-sm mr-2">Quantità attuale:</p>
+                  <Badge variant={currentItem.status === 'Scorta Bassa' ? 'outline' : 'secondary'}>
+                    {currentItem.stock}
+                  </Badge>
+                </div>
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="quantity-to-add">Quantità da Aggiungere</Label>
+                <Input 
+                  id="quantity-to-add" 
+                  type="number"
+                  value={quantityToAdd}
+                  onChange={(e) => setQuantityToAdd(parseInt(e.target.value) || 0)}
+                />
+                <p className="text-sm text-muted-foreground">
+                  Inserisci un valore positivo per aggiungere, negativo per sottrarre.
+                </p>
+              </div>
+              
+              <div className="p-3 rounded-md bg-secondary mt-2">
+                <p className="text-sm">
+                  Quantità dopo aggiornamento: <span className="font-semibold">{currentItem.stock + quantityToAdd}</span>
+                </p>
+              </div>
+            </div>
+          )}
+          
+          <SheetFooter>
+            <Button variant="outline" onClick={() => setIsUpdateOpen(false)}>Annulla</Button>
+            <Button onClick={handleUpdateQuantity}>Aggiorna Quantità</Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
